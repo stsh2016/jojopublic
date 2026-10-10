@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wetter Stäfa</title>
+<meta name="description" content="Aktuelles Wetter in Stäfa am Zürichsee und was du heute anziehen solltest.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stäfa">
+<meta name="theme-color" content="#eef3f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1a22" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-512.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: eine Spalte wie eine iPhone-App – Temperatur oben, Kleidungsempfehlung als Kern, Details darunter */
+:root {
+  --bg: #eef3f6;
+  --surface: #ffffff;
+  --ink: #12232d;
+  --muted: #5b6f7b;
+  --line: #d6e1e7;
+  --lake: #1f5f7a;
+  --temp: hsl(var(--temp-hue, 200) 70% 42%);
+  --temp-soft: hsl(var(--temp-hue, 200) 70% 92%);
+  --warn: #b5560f;
+  --font-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --font-body: "Figtree", -apple-system, "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1a22;
+    --surface: #15262f;
+    --ink: #e7eff3;
+    --muted: #93a8b4;
+    --line: #253a45;
+    --lake: #7cc0dc;
+    --temp: hsl(var(--temp-hue, 200) 75% 66%);
+    --temp-soft: hsl(var(--temp-hue, 200) 40% 18%);
+    --warn: #f0a565;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.45 var(--font-body);
+  -webkit-text-size-adjust: 100%;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px calc(env(safe-area-inset-bottom, 0px) + 28px);
+}
+main { max-width: 34rem; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+main > * { min-width: 0; }
+h1, h2, h3 { margin: 0; font-family: var(--font-display); text-wrap: balance; }
+button { font: inherit; color: inherit; }
+button:focus-visible { outline: 2px solid var(--lake); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Kopf */
+.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.place h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.01em; }
+.place p { margin: 2px 0 0; color: var(--muted); font-size: 0.85rem; }
+.refresh {
+  border: 1px solid var(--line); background: var(--surface); border-radius: 999px;
+  padding: 7px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.refresh[aria-busy="true"] { opacity: 0.6; }
+
+/* Jetzt */
+.now { display: grid; grid-template-columns: auto 1fr; align-items: end; gap: 4px 18px; }
+.now .temp {
+  font-family: var(--font-display); font-weight: 500; font-size: clamp(5rem, 26vw, 7rem);
+  line-height: 0.85; letter-spacing: -0.05em; color: var(--temp);
+}
+.now .cond { font-size: 1.15rem; font-weight: 600; }
+.now .sub { color: var(--muted); font-size: 0.92rem; }
+.now .stack { display: grid; gap: 2px; padding-bottom: 6px; min-width: 0; }
+
+/* Empfehlung */
+.outfit { background: var(--surface); border-radius: 20px; padding: 18px; display: grid; gap: 14px; border: 1px solid var(--line); }
+.seg { display: inline-grid; grid-auto-flow: column; background: var(--bg); border-radius: 10px; padding: 3px; justify-self: start; }
+.seg button { border: 0; background: transparent; padding: 6px 16px; border-radius: 8px; font-size: 0.88rem; font-weight: 600; color: var(--muted); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(0 0 0 / 0.12); }
+.eyebrow { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 600; }
+.verdict { display: grid; gap: 4px; }
+.verdict h2 { font-size: 1.45rem; font-weight: 700; line-height: 1.15; }
+.verdict p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+.items { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.items li { background: var(--temp-soft); color: var(--ink); border-radius: 999px; padding: 7px 13px; font-weight: 600; font-size: 0.93rem; }
+.tips { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 14px; }
+.tips li { display: grid; grid-template-columns: 8px 1fr; gap: 10px; font-size: 0.93rem; align-items: baseline; }
+.tips li::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--lake); transform: translateY(-1px); }
+.tips li.warn::before { background: var(--warn); }
+.tips:empty { display: none; }
+
+/* Stunden */
+.section-h { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 600; margin-bottom: 8px; font-family: var(--font-body); }
+.hours { display: flex; gap: 6px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+.hour { flex: 0 0 auto; min-width: 54px; text-align: center; display: grid; gap: 4px; padding: 10px 6px; border-radius: 14px; scroll-snap-align: start; }
+.hour.first { background: var(--surface); border: 1px solid var(--line); }
+.hour .h { font-size: 0.78rem; color: var(--muted); }
+.hour .t { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; }
+.hour .r { font-size: 0.75rem; color: var(--lake); font-weight: 600; min-height: 1.1em; }
+.bar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.bar span { display: block; height: 100%; background: var(--lake); }
+
+/* Details */
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.cell { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; display: grid; gap: 2px; }
+.cell .v { font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; }
+.cell .k { font-size: 0.8rem; color: var(--muted); }
+
+.days { display: grid; gap: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 4px 14px; }
+.day { display: grid; grid-template-columns: 5.5rem 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 0.95rem; }
+.day:last-child { border-bottom: 0; }
+.day .c { color: var(--muted); font-size: 0.88rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.day .mm b { font-weight: 700; }
+.day .mm span { color: var(--muted); }
+
+.status { color: var(--muted); font-size: 0.8rem; text-align: center; }
+.status.err { color: var(--warn); }
+footer { color: var(--muted); font-size: 0.75rem; text-align: center; }
+footer a { color: inherit; }
+
+.skeleton .temp, .skeleton .cond { opacity: 0.35; }
+@media (prefers-reduced-motion: no-preference) {
+  .items li { animation: pop 0.35s ease both; }
+  @keyframes pop { from { transform: scale(0.94); } to { transform: scale(1); } }
+}
+</style>
+</head>
+<body>
+<main id="app" class="skeleton">
+  <header class="top">
+    <div class="place">
+      <h1>Stäfa</h1>
+      <p>Zürichsee · 414 m ü. M.</p>
+    </div>
+    <button class="refresh" id="refresh" type="button">Aktualisieren</button>
+  </header>
+
+  <section class="now" aria-label="Aktuelles Wetter">
+    <div class="temp num" id="nowTemp">–°</div>
+    <div class="stack">
+      <div class="cond" id="nowCond">Wetter wird geladen …</div>
+      <div class="sub num" id="nowFeels">&nbsp;</div>
+      <div class="sub num" id="nowRange">&nbsp;</div>
+    </div>
+  </section>
+
+  <section class="outfit" aria-label="Kleidungsempfehlung">
+    <div class="seg" role="group" aria-label="Zeitraum">
+      <button type="button" id="segToday" aria-pressed="true">Heute</button>
+      <button type="button" id="segTomorrow" aria-pressed="false">Morgen</button>
+    </div>
+    <div class="verdict">
+      <span class="eyebrow" id="outfitWhen">Was anziehen?</span>
+      <h2 id="outfitTitle">Einen Moment …</h2>
+      <p id="outfitSub" class="num"></p>
+    </div>
+    <ul class="items" id="outfitItems"></ul>
+    <ul class="tips" id="outfitTips"></ul>
+  </section>
+
+  <section aria-label="Nächste Stunden">
+    <h3 class="section-h">Nächste Stunden</h3>
+    <div class="hours num" id="hours"></div>
+  </section>
+
+  <section aria-label="Details">
+    <h3 class="section-h">Details heute</h3>
+    <div class="grid num" id="details"></div>
+  </section>
+
+  <section aria-label="Die nächsten Tage">
+    <h3 class="section-h">Die nächsten Tage</h3>
+    <div class="days num" id="days"></div>
+  </section>
+
+  <p class="status" id="status"></p>
+  <footer>Wetterdaten: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (u. a. Modelle von MeteoSchweiz)</footer>
+</main>
+
+<script>
+(() => {
+  const LAT = 47.2400, LON = 8.7230;
+  const CACHE_KEY = "wetter-staefa-v1";
+  const API = "https://api.open-meteo.com/v1/forecast?latitude=" + LAT + "&longitude=" + LON +
+    "&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,is_day" +
+    "&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,uv_index" +
+    "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max,wind_gusts_10m_max" +
+    "&timezone=Europe%2FZurich&forecast_days=5";
+
+  const $ = (id) => document.getElementById(id);
+  let data = null;
+  let view = "today";
+
+  // ---------- Wettercodes (WMO) ----------
+  const WMO = {
+    0: "Klar", 1: "Überwiegend klar", 2: "Teilweise bewölkt", 3: "Bedeckt",
+    45: "Nebel", 48: "Reifnebel",
+    51: "Leichter Nieselregen", 53: "Nieselregen", 55: "Starker Nieselregen",
+    56: "Gefrierender Nieselregen", 57: "Gefrierender Nieselregen",
+    61: "Leichter Regen", 63: "Regen", 65: "Starker Regen",
+    66: "Gefrierender Regen", 67: "Gefrierender Regen",
+    71: "Leichter Schneefall", 73: "Schneefall", 75: "Starker Schneefall", 77: "Schneegriesel",
+    80: "Leichte Regenschauer", 81: "Regenschauer", 82: "Heftige Regenschauer",
+    85: "Leichte Schneeschauer", 86: "Schneeschauer",
+    95: "Gewitter", 96: "Gewitter mit Hagel", 99: "Gewitter mit Hagel"
+  };
+  const condText = (c, isDay) => (c === 0 && isDay === 0) ? "Klare Nacht" : (WMO[c] || "–");
+  const isSnow = (c) => [71, 73, 75, 77, 85, 86].includes(c);
+  const isThunder = (c) => [95, 96, 99].includes(c);
+  const isFreezing = (c) => [56, 57, 66, 67].includes(c);
+
+  const r = (n) => Math.round(n);
+  const hhmm = (iso) => iso.slice(11, 16);
+  const DAYS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+  const dayName = (iso, i) => i === 0 ? "Heute" : i === 1 ? "Morgen" : DAYS[new Date(iso + "T12:00").getDay()];
+
+  // ---------- Kleidungslogik ----------
+  // Wertet ein Zeitfenster aus Stundenwerten aus.
+  function summarize(h, from, to) {
+    const idx = [];
+    for (let i = from; i < Math.min(to, h.time.length); i++) idx.push(i);
+    const pick = (k) => idx.map((i) => h[k][i]).filter((v) => v != null);
+    const feels = pick("apparent_temperature"), temps = pick("temperature_2m");
+    const codes = pick("weather_code");
+    // Bise: Nordost-Wind (ca. 20–100°) mit spürbarer Stärke
+    const bise = idx.some((i) => {
+      const d = h.wind_direction_10m[i], s = h.wind_speed_10m[i];
+      return d >= 20 && d <= 100 && s >= 15;
+    });
+    const rainHours = idx.filter((i) => h.precipitation_probability[i] >= 50).map((i) => h.time[i]);
+    return {
+      feelsMin: Math.min(...feels), feelsMax: Math.max(...feels),
+      tempMin: Math.min(...temps), tempMax: Math.max(...temps),
+      rainProb: Math.max(0, ...pick("precipitation_probability")),
+      rainSum: pick("precipitation").reduce((a, b) => a + b, 0),
+      windMax: Math.max(...pick("wind_speed_10m")),
+      gustMax: Math.max(...pick("wind_gusts_10m")),
+      uvMax: Math.max(0, ...pick("uv_index")),
+      snow: codes.some(isSnow), thunder: codes.some(isThunder), freezing: codes.some(isFreezing),
+      fog: codes.some((c) => c === 45 || c === 48),
+      bise, rainFrom: rainHours[0], rainTo: rainHours[rainHours.length - 1]
+    };
+  }
+
+  function recommend(s) {
+    const t = s.feelsMin;
+    let title, items;
+    if (t < -5)      { title = "Richtig kalt – dick einpacken"; items = ["Daunenjacke", "Thermo-Unterwäsche", "Dicker Pullover", "Mütze", "Handschuhe", "Schal", "Winterstiefel"]; }
+    else if (t < 2)  { title = "Winterlich – Winterjacke an"; items = ["Winterjacke", "Pullover", "Mütze", "Handschuhe", "Schal", "Warme Schuhe"]; }
+    else if (t < 8)  { title = "Kalt – warme Jacke nötig"; items = ["Warme Jacke", "Pullover", "Lange Hose", "Geschlossene Schuhe"]; if (t < 5) items.push("Schal"); }
+    else if (t < 13) { title = "Frisch – Übergangsjacke reicht"; items = ["Übergangsjacke", "Pulli oder Hoodie", "Lange Hose", "Sneaker"]; }
+    else if (t < 18) { title = "Mild – leichte Jacke"; items = ["Leichte Jacke", "Langarmshirt", "Lange Hose", "Sneaker"]; }
+    else if (t < 23) { title = "Angenehm – T-Shirt-Wetter"; items = ["T-Shirt", "Jeans oder Chino", "Sneaker"]; }
+    else if (t < 28) { title = "Warm – kurz und leicht"; items = ["T-Shirt", "Kurze Hose oder Rock", "Sandalen"]; }
+    else             { title = "Heiss – so luftig wie möglich"; items = ["Leichtes Leinenhemd oder Top", "Kurze Hose", "Sandalen", "Kappe"]; }
+
+    const tips = [];
+    const rainy = s.rainProb >= 60 || s.rainSum >= 2;
+    const windy = s.gustMax >= 45;
+
+    if (rainy) {
+      items.unshift("Regenjacke");
+      if (!windy) items.push("Regenschirm");
+      if (t >= 8) items.push("Wasserfeste Schuhe");
+      const when = s.rainFrom ? (s.rainFrom === s.rainTo ? " um " + hhmm(s.rainFrom) : " zwischen " + hhmm(s.rainFrom) + " und " + hhmm(s.rainTo)) : "";
+      tips.push({ t: "Regen wahrscheinlich" + when + " (bis " + r(s.rainProb) + " %).", w: true });
+    } else if (s.rainProb >= 30) {
+      items.push("Knirps einpacken");
+      tips.push({ t: "Schauer möglich (" + r(s.rainProb) + " %). Ein kleiner Schirm in der Tasche reicht." });
+    }
+    if (s.snow) { tips.push({ t: "Schnee möglich: Schuhe mit gutem Profil, die nicht nass werden.", w: true }); if (!items.includes("Winterstiefel")) items.push("Wasserdichte Winterschuhe"); }
+    if (s.freezing) tips.push({ t: "Gefrierender Regen möglich – Glättegefahr auf Trottoir und Strasse.", w: true });
+    if (s.thunder) tips.push({ t: "Gewitter möglich: Regenjacke mitnehmen und nicht aufs Wasser gehen.", w: true });
+    if (windy) tips.push({ t: "Böen bis " + r(s.gustMax) + " km/h. Windfeste Jacke statt Schirm, am See ist es noch ruppiger.", w: true });
+    else if (s.windMax >= 25) tips.push({ t: "Spürbarer Wind (" + r(s.windMax) + " km/h). Eine winddichte Schicht hilft." });
+    if (s.bise && t < 15) tips.push({ t: "Bise aus Nordost – fühlt sich kälter an, als das Thermometer zeigt." });
+    if (s.feelsMax - s.feelsMin >= 8) tips.push({ t: "Grosser Temperaturunterschied (" + r(s.feelsMin) + "° bis " + r(s.feelsMax) + "° gefühlt). Zwiebelprinzip: Schichten, die du ausziehen kannst." });
+    if (s.uvMax >= 6) { items.push("Sonnenbrille", "Sonnencreme"); tips.push({ t: "Hoher UV-Index (" + r(s.uvMax) + "). Sonnencreme mit LSF 30+." , w: true }); }
+    else if (s.uvMax >= 3 && !rainy) { items.push("Sonnenbrille"); }
+    if (s.fog) tips.push({ t: "Nebel am See möglich – oben am Pfannenstiel ist es oft sonnig." });
+
+    return { title, items: [...new Set(items)], tips };
+  }
+
+  // ---------- Rendering ----------
+  function setHue(feels) {
+    // Kalt = Blau, mild = Seegrün-Blau, warm = Bernstein, heiss = Orangerot
+    const hue = feels < 8 ? 212 : feels < 18 ? 192 : feels < 24 ? 36 : 14;
+    document.documentElement.style.setProperty("--temp-hue", hue);
+  }
+
+  function nowIndex(h, curTime) {
+    const hourStr = curTime.slice(0, 13) + ":00";
+    const i = h.time.indexOf(hourStr);
+    return i < 0 ? 0 : i;
+  }
+
+  function render() {
+    if (!data) return;
+    const c = data.current, h = data.hourly, d = data.daily;
+    document.getElementById("app").classList.remove("skeleton");
+    setHue(c.apparent_temperature);
+
+    $("nowTemp").textContent = r(c.temperature_2m) + "°";
+    $("nowCond").textContent = condText(c.weather_code, c.is_day);
+    $("nowFeels").textContent = "Gefühlt " + r(c.apparent_temperature) + "° · Wind " + r(c.wind_speed_10m) + " km/h";
+    $("nowRange").textContent = "Heute " + r(d.temperature_2m_min[0]) + "° bis " + r(d.temperature_2m_max[0]) + "°";
+
+    // Zeitfenster für die Empfehlung
+    const ni = nowIndex(h, c.time);
+    let from, to, when;
+    if (view === "today") {
+      const curHour = +c.time.slice(11, 13);
+      from = ni;
+      to = curHour < 20 ? ni + (22 - curHour) : ni + 4;
+      when = curHour < 20 ? "Jetzt bis 22 Uhr" : "Die nächsten Stunden";
+    } else {
+      const tomorrow = d.time[1];
+      from = h.time.indexOf(tomorrow + "T07:00");
+      to = h.time.indexOf(tomorrow + "T21:00") + 1;
+      when = "Morgen, 7 bis 21 Uhr";
+    }
+    const s = summarize(h, from, to);
+    const rec = recommend(s);
+    $("outfitWhen").textContent = when;
+    $("outfitTitle").textContent = rec.title;
+    $("outfitSub").textContent = "Gefühlt " + r(s.feelsMin) + "° bis " + r(s.feelsMax) + "° · Regen bis " + r(s.rainProb) + " %";
+    $("outfitItems").replaceChildren(...rec.items.map((x) => Object.assign(document.createElement("li"), { textContent: x })));
+    $("outfitTips").replaceChildren(...rec.tips.map((x) => {
+      const li = document.createElement("li");
+      li.textContent = x.t;
+      if (x.w) li.className = "warn";
+      return li;
+    }));
+
+    // Stunden
+    const hours = [];
+    for (let i = ni; i < Math.min(ni + 24, h.time.length); i++) {
+      const p = h.precipitation_probability[i] ?? 0;
+      const el = document.createElement("div");
+      el.className = "hour" + (i === ni ? " first" : "");
+      el.innerHTML = '<span class="h"></span><span class="t"></span><span class="r"></span><div class="bar"><span></span></div>';
+      el.querySelector(".h").textContent = i === ni ? "Jetzt" : hhmm(h.time[i]);
+      el.querySelector(".t").textContent = r(h.temperature_2m[i]) + "°";
+      el.querySelector(".r").textContent = p >= 10 ? p + " %" : "";
+      el.querySelector(".bar span").style.width = p + "%";
+      el.title = condText(h.weather_code[i], 1);
+      hours.push(el);
+    }
+    $("hours").replaceChildren(...hours);
+
+    // Details
+    const cells = [
+      [r(c.wind_gusts_10m) + " km/h", "Böen jetzt"],
+      [r(d.precipitation_sum[0] * 10) / 10 + " mm", "Regen heute"],
+      [String(r(d.uv_index_max[0])), "UV-Index max."],
+      [c.relative_humidity_2m + " %", "Luftfeuchtigkeit"],
+      [hhmm(d.sunrise[0]), "Sonnenaufgang"],
+      [hhmm(d.sunset[0]), "Sonnenuntergang"]
+    ];
+    $("details").replaceChildren(...cells.map(([v, k]) => {
+      const el = document.createElement("div");
+      el.className = "cell";
+      el.innerHTML = '<span class="v"></span><span class="k"></span>';
+      el.querySelector(".v").textContent = v;
+      el.querySelector(".k").textContent = k;
+      return el;
+    }));
+
+    // Tage
+    $("days").replaceChildren(...d.time.map((t, i) => {
+      const el = document.createElement("div");
+      el.className = "day";
+      el.innerHTML = '<span class="n"></span><span class="c"></span><span class="mm"><span></span> / <b></b></span>';
+      el.querySelector(".n").textContent = dayName(t, i);
+      const rp = d.precipitation_probability_max[i];
+      el.querySelector(".c").textContent = (WMO[d.weather_code[i]] || "–") + (rp >= 30 ? " · " + rp + " %" : "");
+      el.querySelector(".mm span").textContent = r(d.temperature_2m_min[i]) + "°";
+      el.querySelector(".mm b").textContent = r(d.temperature_2m_max[i]) + "°";
+      return el;
+    }));
+  }
+
+  function setStatus(text, err) {
+    const el = $("status");
+    el.textContent = text;
+    el.classList.toggle("err", !!err);
+  }
+
+  function stamp(ts) {
+    const dt = new Date(ts);
+    return dt.toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  async function load() {
+    const btn = $("refresh");
+    btn.setAttribute("aria-busy", "true");
+    btn.textContent = "Lädt …";
+    try {
+      const res = await fetch(API, { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      data = await res.json();
+      const ts = Date.now();
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts, data })); } catch (e) {}
+      render();
+      setStatus("Stand " + stamp(ts) + " Uhr");
+    } catch (e) {
+      if (data) setStatus("Keine Verbindung. Angezeigt werden die zuletzt geladenen Daten.", true);
+      else setStatus("Wetter konnte nicht geladen werden. Prüfe die Internetverbindung und tippe auf «Aktualisieren».", true);
+    } finally {
+      btn.removeAttribute("aria-busy");
+      btn.textContent = "Aktualisieren";
+    }
+  }
+
+  // Zuletzt geladene Daten sofort zeigen, dann frisch laden
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+    if (cached && cached.data) { data = cached.data; render(); setStatus("Stand " + stamp(cached.ts) + " Uhr · wird aktualisiert …"); }
+  } catch (e) {}
+
+  function setView(v) {
+    view = v;
+    $("segToday").setAttribute("aria-pressed", v === "today");
+    $("segTomorrow").setAttribute("aria-pressed", v === "tomorrow");
+    render();
+  }
+  $("segToday").addEventListener("click", () => setView("today"));
+  $("segTomorrow").addEventListener("click", () => setView("tomorrow"));
+  $("refresh").addEventListener("click", load);
+
+  // Beim Zurückkehren in die App neu laden, wenn älter als 15 Minuten
+  let lastLoad = Date.now();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && Date.now() - lastLoad > 15 * 60 * 1000) { lastLoad = Date.now(); load(); }
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
