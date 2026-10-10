@@ -5,6 +5,10 @@ Web-App fürs iPhone: aktuelles Wetter und eine Empfehlung, was man anziehen sol
 Orte zur Auswahl (Tippen auf den Ortsnamen oben öffnet das Menü, die Wahl wird gespeichert):
 Stäfa, Uetikon am See, Zürich und Hohentengen am Hochrhein.
 
+Für jeden Ort ausser Stäfa zeigt die App die nächsten 2 Verbindungen von Stäfa dorthin und zurück
+(Fahrplan von [transport.opendata.ch](https://transport.opendata.ch/), mit Gleis und Verspätung; nach Uetikon und Zürich nur Züge).
+«Details heute» und «Die nächsten Tage» sind zugeklappt und öffnen sich per Tippen.
+
 - Reine statische Website: HTML, CSS und JavaScript in einer Datei, kein Build-Schritt, keine Abhängigkeiten.
 - Wetterdaten von [Open-Meteo](https://open-meteo.com/) (kostenlos, kein API-Schlüssel, u. a. Modelle von MeteoSchweiz).
 - Als App installierbar über Safari → Teilen → «Zum Home-Bildschirm».
@@ -52,5 +56,5 @@ Dann `http://localhost:8790` im Browser öffnen.
 
 ## Anpassen
 
-- **Orte ändern oder ergänzen:** Liste `PLACES` oben im Skript in `index.html` (Name, Koordinaten, Höhenangabe, Wind- und Nebelhinweis) und dazu passend eine `<option>` im Auswahlmenü `#place`.
+- **Orte ändern oder ergänzen:** Liste `PLACES` oben im Skript in `index.html` (Name, Koordinaten, Höhenangabe, Wind- und Nebelhinweis) und dazu passend eine `<option>` im Auswahlmenü `#place`. Die Haltestelle für den Fahrplan steht in `STOPS` (SBB-Nummer, z. B. über `https://transport.opendata.ch/v1/locations?query=Ortsname` zu finden).
 - **Kleidungsregeln:** Funktion `recommend()` in `index.html`. Die Grenzen richten sich nach der kältesten gefühlten Temperatur im gewählten Zeitraum.

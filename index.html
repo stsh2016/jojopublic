@@ -137,6 +137,37 @@ button:focus-visible { outline: 2px solid var(--lake); outline-offset: 2px; }
 .day .mm b { font-weight: 700; }
 .day .mm span { color: var(--muted); }
 
+/* Aufklappbare Abschnitte */
+.fold { display: grid; gap: 10px; }
+.fold summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px;
+  font-weight: 600; font-size: 0.95rem;
+}
+.fold summary::-webkit-details-marker { display: none; }
+.fold summary::after {
+  content: ""; flex: none; width: 7px; height: 7px; margin-right: 4px;
+  border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+  transform: translateY(-2px) rotate(45deg); transition: transform 0.2s ease;
+}
+.fold[open] summary::after { transform: translateY(1px) rotate(-135deg); }
+.fold summary:focus-visible { outline: 2px solid var(--lake); outline-offset: 2px; }
+.fold .peek { margin-left: auto; color: var(--muted); font-weight: 500; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.fold[open] .peek { visibility: hidden; }
+
+/* Zugverbindungen */
+.trains { display: grid; gap: 10px; }
+.route { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 4px 14px; }
+.route h4 { margin: 0; padding: 10px 0 6px; font-size: 0.8rem; color: var(--muted); font-weight: 600; display: flex; gap: 6px; align-items: center; }
+.conn { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 12px; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--line); }
+.conn .dep { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; }
+.conn .arr { font-size: 0.92rem; min-width: 0; }
+.conn .line { grid-column: 2 / 4; color: var(--muted); font-size: 0.82rem; min-width: 0; overflow-wrap: anywhere; }
+.conn .pf { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+.conn .late { color: var(--warn); font-family: var(--font-body); font-weight: 600; font-size: 0.8rem; }
+.conn .gone { color: var(--warn); font-weight: 600; grid-column: 1 / 4; font-size: 0.82rem; }
+.trains .note { color: var(--muted); font-size: 0.9rem; margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; }
+
 .status { color: var(--muted); font-size: 0.8rem; text-align: center; }
 .status.err { color: var(--warn); }
 footer { color: var(--muted); font-size: 0.75rem; text-align: center; }
@@ -196,18 +227,23 @@ footer a { color: inherit; }
     <div class="hours num" id="hours"></div>
   </section>
 
-  <section aria-label="Details">
-    <h3 class="section-h">Details heute</h3>
-    <div class="grid num" id="details"></div>
+  <section id="trainSec" aria-label="Zugverbindungen">
+    <h3 class="section-h">Zug ab Stäfa</h3>
+    <div class="trains num" id="trains"></div>
   </section>
 
-  <section aria-label="Die nächsten Tage">
-    <h3 class="section-h">Die nächsten Tage</h3>
+  <details class="fold" id="foldDetails">
+    <summary><span>Details heute</span><span class="peek num" id="peekDetails"></span></summary>
+    <div class="grid num" id="details"></div>
+  </details>
+
+  <details class="fold" id="foldDays">
+    <summary><span>Die nächsten Tage</span><span class="peek num" id="peekDays"></span></summary>
     <div class="days num" id="days"></div>
-  </section>
+  </details>
 
   <p class="status" id="status"></p>
-  <footer>Wetterdaten: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (u. a. Modelle von MeteoSchweiz)</footer>
+  <footer>Wetterdaten: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (u. a. Modelle von MeteoSchweiz) · Fahrplan: <a href="https://transport.opendata.ch/" target="_blank" rel="noopener">transport.opendata.ch</a></footer>
 </main>
 
 <script>
@@ -222,6 +258,13 @@ footer a { color: inherit; }
                    fog: "Hochnebel möglich – auf dem Uetliberg ist es oft sonnig." },
     hohentengen: { name: "Hohentengen",    lat: 47.5700, lon: 8.4340, meta: "am Hochrhein (DE) · 347 m ü. M.", water: "am Rhein",
                    fog: "Nebel am Rhein möglich – er löst sich oft erst gegen Mittag auf." }
+  };
+  // Haltestellen (SBB-Nummern) für die Verbindungen ab Stäfa; trainOnly: Busse ausblenden
+  const HOME_STOP = { id: "8503107", name: "Stäfa" };
+  const STOPS = {
+    uetikon:     { id: "8503105", name: "Uetikon", trainOnly: true },
+    zuerich:     { id: "8503000", name: "Zürich HB", trainOnly: true },
+    hohentengen: { id: "1104272", name: "Hohentengen", trainOnly: false }
   };
   const PLACE_KEY = "wetter-ort";
   const CACHE_PREFIX = "wetter-cache-";
@@ -427,6 +470,92 @@ footer a { color: inherit; }
       el.querySelector(".mm b").textContent = r(d.temperature_2m_max[i]) + "°";
       return el;
     }));
+
+    // Kurzvorschau in den zugeklappten Abschnitten
+    $("peekDetails").textContent = "Böen " + r(c.wind_gusts_10m) + " km/h · UV " + r(d.uv_index_max[0]);
+    $("peekDays").textContent = "Morgen " + r(d.temperature_2m_min[1]) + "° / " + r(d.temperature_2m_max[1]) + "°";
+  }
+
+  // ---------- Zugverbindungen ----------
+  const mins = (dur) => { // "00d02:22:00" → 142
+    const m = /(\d+)d(\d+):(\d+)/.exec(dur || "");
+    return m ? (+m[1]) * 1440 + (+m[2]) * 60 + (+m[3]) : null;
+  };
+  const durText = (m) => m == null ? "" : m < 60 ? m + " Min." : Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " Min.";
+
+  function connEl(cn) {
+    const el = document.createElement("div");
+    el.className = "conn";
+    el.innerHTML = '<span class="dep"></span><span class="arr"></span><span class="pf"></span><span class="line"></span>';
+    const late = cn.from.delay;
+    const dep = el.querySelector(".dep");
+    dep.textContent = hhmm(cn.from.departure);
+    if (late > 0) {
+      const s = document.createElement("span");
+      s.className = "late";
+      s.textContent = " +" + late + "′";
+      dep.append(s);
+    }
+    el.querySelector(".arr").textContent = "→ " + hhmm(cn.to.arrival) + " · " + durText(mins(cn.duration));
+    const pfNow = (cn.from.prognosis && cn.from.prognosis.platform) || cn.from.platform;
+    el.querySelector(".pf").textContent = pfNow ? (/^\d/.test(pfNow) ? "Gleis " + pfNow : "Kante " + pfNow) : "";
+    const parts = (cn.products || []).map((p) => /^\d+$/.test(p) ? "Bus " + p : p);
+    const t = cn.transfers;
+    el.querySelector(".line").textContent = parts.join(" › ") + (t > 0 ? " · " + t + "× umsteigen" : " · direkt");
+    return el;
+  }
+
+  function routeEl(fromName, toName, list, error) {
+    const box = document.createElement("div");
+    box.className = "route";
+    const h = document.createElement("h4");
+    h.textContent = fromName + " → " + toName;
+    box.append(h);
+    if (error) {
+      const p = document.createElement("div");
+      p.className = "conn";
+      p.innerHTML = '<span class="gone"></span>';
+      p.firstChild.textContent = error;
+      box.append(p);
+    } else {
+      list.forEach((cn) => box.append(connEl(cn)));
+    }
+    return box;
+  }
+
+  let trainNo = 0;
+  async function loadTrains() {
+    const my = ++trainNo;
+    const stop = STOPS[placeId];
+    const box = $("trains");
+    if (!stop) {
+      const p = document.createElement("p");
+      p.className = "note";
+      p.textContent = "Wähle oben einen anderen Ort, um die nächsten Verbindungen ab Stäfa und zurück zu sehen.";
+      box.replaceChildren(p);
+      return;
+    }
+    if (!box.querySelector(".route")) {
+      const p = document.createElement("p");
+      p.className = "note";
+      p.textContent = "Fahrplan wird geladen …";
+      box.replaceChildren(p);
+    }
+    const query = async (from, to) => {
+      let u = "https://transport.opendata.ch/v1/connections?from=" + from + "&to=" + to + "&limit=2";
+      if (stop.trainOnly) u += "&transportations[]=train";
+      const res = await fetch(u, { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const j = await res.json();
+      return (j.connections || []).slice(0, 2);
+    };
+    const [out, back] = await Promise.allSettled([query(HOME_STOP.id, stop.id), query(stop.id, HOME_STOP.id)]);
+    if (my !== trainNo) return;
+    const msg = (r) => r.status === "rejected" ? "Fahrplan konnte nicht geladen werden." : r.value.length ? null : "Keine Verbindung gefunden.";
+    box.replaceChildren(
+      routeEl(HOME_STOP.name, stop.name, out.value || [], msg(out)),
+      routeEl(stop.name, HOME_STOP.name, back.value || [], msg(back))
+    );
   }
 
   function setStatus(text, err) {
@@ -445,6 +574,7 @@ footer a { color: inherit; }
     const id = placeId, my = ++requestNo;
     const btn = $("refresh");
     btn.setAttribute("aria-busy", "true");
+    loadTrains();
     try {
       const res = await fetch(apiUrl(PLACES[id]), { cache: "no-store" });
       if (!res.ok) throw new Error("HTTP " + res.status);
@@ -485,6 +615,7 @@ footer a { color: inherit; }
       $("outfitTitle").textContent = "Einen Moment …";
       $("outfitSub").textContent = "";
       for (const id of ["outfitItems", "outfitTips", "hours", "details", "days"]) $(id).replaceChildren();
+      for (const id of ["peekDetails", "peekDays"]) $(id).textContent = "";
       setStatus("");
     }
   }
@@ -493,6 +624,7 @@ footer a { color: inherit; }
     placeId = e.target.value;
     try { localStorage.setItem(PLACE_KEY, placeId); } catch (err) {}
     showPlace();
+    $("trains").replaceChildren();
     load();
   });
   showPlace();
@@ -509,9 +641,16 @@ footer a { color: inherit; }
 
   // Beim Zurückkehren in die App neu laden, wenn älter als 15 Minuten
   let lastLoad = Date.now();
+  // Fahrplan veraltet schneller: beim Zurückkehren nach 1 Minute neu laden, sonst alle 2 Minuten
+  let lastTrains = Date.now();
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && Date.now() - lastLoad > 15 * 60 * 1000) { lastLoad = Date.now(); load(); }
+    if (document.visibilityState !== "visible") return;
+    if (Date.now() - lastLoad > 15 * 60 * 1000) { lastLoad = lastTrains = Date.now(); load(); }
+    else if (Date.now() - lastTrains > 60 * 1000) { lastTrains = Date.now(); loadTrains(); }
   });
+  setInterval(() => {
+    if (document.visibilityState === "visible") { lastTrains = Date.now(); loadTrains(); }
+  }, 2 * 60 * 1000);
 
   load();
 })();
