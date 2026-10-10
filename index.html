@@ -481,6 +481,10 @@ footer a { color: inherit; }
       document.getElementById("app").classList.add("skeleton");
       $("nowTemp").textContent = "–°";
       $("nowCond").textContent = "Wetter wird geladen …";
+      for (const id of ["nowFeels", "nowRange"]) $(id).innerHTML = "&nbsp;";
+      $("outfitTitle").textContent = "Einen Moment …";
+      $("outfitSub").textContent = "";
+      for (const id of ["outfitItems", "outfitTips", "hours", "details", "days"]) $(id).replaceChildren();
       setStatus("");
     }
   }
