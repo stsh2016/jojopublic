@@ -9,8 +9,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Wetter">
-<meta name="theme-color" content="#eef3f6" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0d1a22" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f9c3dc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#4a1233" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-512.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -20,11 +20,12 @@
 <style>
 /* Layout: eine Spalte wie eine iPhone-App – Temperatur oben, Kleidungsempfehlung als Kern, Details darunter */
 :root {
-  --bg: #eef3f6;
-  --surface: #ffffff;
-  --ink: #12232d;
-  --muted: #5b6f7b;
-  --line: #d6e1e7;
+  --bg: #f9c3dc;
+  --surface: #fff5fa;
+  --ink: #2a1220;
+  --muted: #7d4762;
+  --line: #efaecb;
+  --greet: #a8235f;
   --lake: #1f5f7a;
   --temp: hsl(var(--temp-hue, 200) 70% 42%);
   --temp-soft: hsl(var(--temp-hue, 200) 70% 92%);
@@ -35,11 +36,12 @@
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0d1a22;
-    --surface: #15262f;
-    --ink: #e7eff3;
-    --muted: #93a8b4;
-    --line: #253a45;
+    --bg: #4a1233;
+    --surface: #5c1a41;
+    --ink: #fdebf4;
+    --muted: #e3a9c6;
+    --line: #7a2b58;
+    --greet: #ffb3d6;
     --lake: #7cc0dc;
     --temp: hsl(var(--temp-hue, 200) 75% 66%);
     --temp-soft: hsl(var(--temp-hue, 200) 40% 18%);
@@ -85,6 +87,11 @@ button:focus-visible { outline: 2px solid var(--lake); outline-offset: 2px; }
   .refresh[aria-busy="true"] svg { animation: spin 0.9s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 }
+
+/* Begrüssung */
+.hello { display: grid; gap: 4px; }
+.hello h2 { font-size: 1.35rem; font-weight: 700; color: var(--greet); }
+.hello p { margin: 0; font-size: 0.95rem; color: var(--ink); max-width: 34ch; }
 
 /* Jetzt */
 .now { display: grid; grid-template-columns: auto 1fr; align-items: end; gap: 4px 18px; }
@@ -182,6 +189,11 @@ footer a { color: inherit; }
 </head>
 <body>
 <main id="app" class="skeleton">
+  <section class="hello" aria-label="Begrüssung">
+    <h2>Liebe JoJo und liebe Maja</h2>
+    <p>Hier seht ihr, wie das Wetter wird, was ihr anziehen solltet und wann der nächste Zug fährt.</p>
+  </section>
+
   <header class="top">
     <div class="place">
       <label class="pick" for="place">
