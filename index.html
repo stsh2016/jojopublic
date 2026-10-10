@@ -152,6 +152,7 @@ button:focus-visible { outline: 2px solid var(--lake); outline-offset: 2px; }
   font-weight: 600; font-size: 0.95rem;
 }
 .fold summary::-webkit-details-marker { display: none; }
+.fold summary > span:first-child { flex: 1 0 auto; }
 .fold summary::after {
   content: ""; flex: none; width: 7px; height: 7px; margin-right: 4px;
   border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
@@ -161,6 +162,32 @@ button:focus-visible { outline: 2px solid var(--lake); outline-offset: 2px; }
 .fold summary:focus-visible { outline: 2px solid var(--lake); outline-offset: 2px; }
 .fold .peek { margin-left: auto; color: var(--muted); font-weight: 500; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .fold[open] .peek { visibility: hidden; }
+
+/* Wochenplan */
+.weeksec { display: grid; gap: 10px; }
+.week { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 2px 14px; }
+.wday { padding: 10px 0; border-top: 1px solid var(--line); display: grid; gap: 4px; }
+.wday:first-child { border-top: 0; }
+.wday-h { display: flex; justify-content: space-between; gap: 10px; font-weight: 700; font-size: 0.9rem; }
+.wday-h .wx { color: var(--muted); font-weight: 500; font-size: 0.82rem; white-space: nowrap; }
+.wday.today .wday-h > span:first-child { color: var(--greet); }
+.ev { display: grid; grid-template-columns: 3.6rem minmax(0, 1fr) auto; gap: 0 10px; align-items: baseline; font-size: 0.93rem; }
+.ev .tm { color: var(--muted); font-size: 0.85rem; }
+.ev .ti { font-weight: 600; overflow-wrap: anywhere; }
+.ev .lo { grid-column: 2; color: var(--muted); font-size: 0.8rem; overflow-wrap: anywhere; }
+.ev .del { border: 0; background: transparent; color: var(--muted); font-size: 1.1rem; line-height: 1; padding: 2px 4px; cursor: pointer; border-radius: 6px; }
+.week .empty { color: var(--muted); font-size: 0.9rem; margin: 0; padding: 10px 0; }
+.weekmeta { color: var(--muted); font-size: 0.78rem; margin: 0; }
+.fold.mini summary { padding: 10px 14px; font-size: 0.88rem; font-weight: 600; }
+.addform { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+.addform label { display: grid; gap: 3px; font-size: 0.78rem; color: var(--muted); font-weight: 600; min-width: 0; }
+.addform .wide { grid-column: 1 / -1; }
+.addform input { font: inherit; font-size: 16px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; min-width: 0; width: 100%; }
+.addform button { grid-column: 1 / -1; font-weight: 600; border: 0; border-radius: 10px; padding: 10px; background: var(--greet); color: var(--surface); cursor: pointer; }
+.howto { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; font-size: 0.88rem; }
+.howto ol { margin: 6px 0 0; padding-left: 1.2rem; display: grid; gap: 6px; }
+.howto code { font-size: 0.8rem; background: var(--bg); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+.howto p { margin: 8px 0 0; color: var(--muted); }
 
 /* Zugverbindungen */
 .trains { display: grid; gap: 10px; }
@@ -239,6 +266,37 @@ footer a { color: inherit; }
     <div class="hours num" id="hours"></div>
   </section>
 
+  <section class="weeksec" aria-label="Wochenplan">
+    <h3 class="section-h" style="margin-bottom:0">Diese Woche</h3>
+    <div class="week num" id="week"></div>
+    <p class="weekmeta" id="weekMeta"></p>
+    <details class="fold mini" id="foldAdd">
+      <summary><span>Termin von Hand eintragen</span></summary>
+      <form class="addform" id="addForm" autocomplete="off">
+        <label>Datum<input type="date" id="addDate" required></label>
+        <label>Zeit (leer = ganztägig)<input type="time" id="addTime"></label>
+        <label class="wide">Was<input type="text" id="addTitle" required maxlength="80" placeholder="z. B. Turnen"></label>
+        <button type="submit">Eintragen</button>
+      </form>
+    </details>
+    <details class="fold mini" id="foldHow">
+      <summary><span>Termine aus dem iPhone-Kalender holen</span></summary>
+      <div class="howto">
+        Einmal einen Kurzbefehl anlegen (App «Kurzbefehle» → <b>+</b>):
+        <ol>
+          <li><b>Kalenderereignisse suchen</b>: Filter «Startdatum ist in den nächsten 7 Tage», sortiert nach Startdatum, ggf. «Kalender ist …» für die wichtigen Kalender.</li>
+          <li><b>Wiederholen mit jedem</b> Objekt, darin eine <b>Text</b>-Aktion:<br>
+            <code>Startdatum|Enddatum|Ist ganztägig|Titel|Ort</code><br>
+            (jeweils die Variable «Wiederholungsobjekt» mit der passenden Eigenschaft einsetzen, Datumsformat «ISO 8601», getrennt durch einen senkrechten Strich).</li>
+          <li><b>Text kombinieren</b> (Ergebnis der Wiederholung) mit «Neue Zeile», danach <b>URL codieren</b>.</li>
+          <li><b>Text</b>: <code>https://stsh2016.github.io/jojopublic/#termine=</code> und direkt dahinter die codierte Variable.</li>
+          <li><b>URLs öffnen</b> mit diesem Text.</li>
+        </ol>
+        <p>Den Kurzbefehl auf den Home-Bildschirm legen und die App künftig darüber öffnen. Die Termine werden nur auf diesem iPhone gespeichert und nicht ins Internet übertragen.</p>
+      </div>
+    </details>
+  </section>
+
   <section id="trainSec" aria-label="Zugverbindungen">
     <h3 class="section-h">Zug ab Stäfa</h3>
     <div class="trains num" id="trains"></div>
@@ -288,7 +346,7 @@ footer a { color: inherit; }
     "&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,is_day" +
     "&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,uv_index" +
     "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max,wind_gusts_10m_max" +
-    "&timezone=Europe%2FZurich&forecast_days=5";
+    "&timezone=Europe%2FZurich&forecast_days=7";
 
   const $ = (id) => document.getElementById(id);
   let data = null;
@@ -486,7 +544,163 @@ footer a { color: inherit; }
     // Kurzvorschau in den zugeklappten Abschnitten
     $("peekDetails").textContent = "Böen " + r(c.wind_gusts_10m) + " km/h · UV " + r(d.uv_index_max[0]);
     $("peekDays").textContent = "Morgen " + r(d.temperature_2m_min[1]) + "° / " + r(d.temperature_2m_max[1]) + "°";
+    renderWeek();
   }
+
+  // ---------- Wochenplan ----------
+  // Termine kommen aus dem iPhone-Kalender (Kurzbefehl öffnet die App mit #termine=…)
+  // oder werden von Hand eingetragen. Beides bleibt nur in diesem Browser gespeichert.
+  const IMPORT_KEY = "termine-kalender", OWN_KEY = "termine-eigene";
+  const readStore = (k, fallback) => { try { return JSON.parse(localStorage.getItem(k) || "null") ?? fallback; } catch (e) { return fallback; } };
+  const writeStore = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  const pad = (n) => String(n).padStart(2, "0");
+  const dkey = (dt) => dt.getFullYear() + "-" + pad(dt.getMonth() + 1) + "-" + pad(dt.getDate());
+  const WDAYS = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+
+  // Akzeptiert ISO 8601 (auch +0200) und deutsches Format «12.10.2026, 09:00»
+  function parseWhen(s) {
+    s = (s || "").trim();
+    if (!s) return null;
+    let t = Date.parse(s.replace(/([+-]\d{2})(\d{2})$/, "$1:$2").replace(" ", "T"));
+    if (!isNaN(t)) return new Date(t);
+    const m = /(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{4})(?:\D+(\d{1,2}):(\d{2}))?/.exec(s);
+    if (m) return new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0));
+    return null;
+  }
+  const truthy = (v) => /^(1|ja|yes|true|wahr)$/i.test((v || "").trim());
+
+  function importFromHash() {
+    const h = location.hash;
+    if (!h.startsWith("#termine=")) return;
+    let raw = h.slice(9);
+    try { raw = decodeURIComponent(raw); } catch (e) {}
+    try { raw = decodeURIComponent(raw); } catch (e) {} // falls doppelt codiert
+    const items = [];
+    for (const line of raw.split(/\r?\n/)) {
+      if (!line.trim()) continue;
+      const p = line.split("|");
+      const s = parseWhen(p[0]);
+      if (!s) continue;
+      const e = parseWhen(p[1]) || s;
+      const loc = p.length > 4 ? p.pop().trim() : "";
+      const title = p.slice(3).join("|").trim() || "Termin";
+      let allDay = truthy(p[2]);
+      if (!p[2] && s.getHours() === 0 && s.getMinutes() === 0 && (e - s) % 86400000 === 0 && e > s) allDay = true;
+      items.push({ s: s.toISOString(), e: e.toISOString(), a: allDay, t: title, l: loc });
+    }
+    writeStore(IMPORT_KEY, { ts: Date.now(), items });
+    history.replaceState(null, "", location.pathname + location.search); // Termine nicht in der Adresse stehen lassen
+  }
+
+  function eventsForWeek() {
+    const imp = readStore(IMPORT_KEY, { items: [] }).items || [];
+    const own = readStore(OWN_KEY, []);
+    const all = [
+      ...imp.map((x) => ({ ...x, src: "cal" })),
+      ...own.map((x) => ({ ...x, src: "own" }))
+    ].map((x) => ({ ...x, S: new Date(x.s), E: new Date(x.e || x.s) }));
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d0 = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      const d1 = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i + 1);
+      const list = all.filter((x) => {
+        const end = x.a ? x.E : (x.E > x.S ? x.E : new Date(x.S.getTime() + 1));
+        if (i === 0 && !x.a && end < now) return false; // heute schon vorbei
+        return x.S < d1 && end > d0;
+      }).sort((a, b) => (b.a - a.a) || (a.S - b.S));
+      days.push({ date: d0, i, list });
+    }
+    return days;
+  }
+
+  function renderWeek() {
+    const box = $("week");
+    const days = eventsForWeek().filter((d) => d.list.length);
+    if (!days.length) {
+      const p = document.createElement("p");
+      p.className = "empty";
+      p.textContent = "Keine Termine in den nächsten 7 Tagen. Tippe unten auf «Termine aus dem iPhone-Kalender holen» oder trage einen Termin von Hand ein.";
+      box.replaceChildren(p);
+    } else {
+      box.replaceChildren(...days.map((day) => {
+        const el = document.createElement("div");
+        el.className = "wday" + (day.i === 0 ? " today" : "");
+        const head = document.createElement("div");
+        head.className = "wday-h";
+        const name = document.createElement("span");
+        name.textContent = (day.i === 0 ? "Heute" : day.i === 1 ? "Morgen" : WDAYS[day.date.getDay()]) + ", " + day.date.getDate() + "." + (day.date.getMonth() + 1) + ".";
+        const wx = document.createElement("span");
+        wx.className = "wx";
+        if (data && data.daily) {
+          const k = data.daily.time.indexOf(dkey(day.date));
+          if (k >= 0) {
+            const rp = data.daily.precipitation_probability_max[k];
+            wx.textContent = r(data.daily.temperature_2m_min[k]) + "° / " + r(data.daily.temperature_2m_max[k]) + "°" + (rp >= 40 ? " · Regen " + rp + " %" : "");
+          }
+        }
+        head.append(name, wx);
+        el.append(head);
+        for (const x of day.list) {
+          const ev = document.createElement("div");
+          ev.className = "ev";
+          const tm = document.createElement("span");
+          tm.className = "tm";
+          tm.textContent = x.a ? "ganztags" : (x.S < day.date ? "bis " + pad(x.E.getHours()) + ":" + pad(x.E.getMinutes()) : pad(x.S.getHours()) + ":" + pad(x.S.getMinutes()));
+          const ti = document.createElement("span");
+          ti.className = "ti";
+          ti.textContent = x.t;
+          ev.append(tm, ti);
+          if (x.src === "own") {
+            const del = document.createElement("button");
+            del.type = "button";
+            del.className = "del";
+            del.textContent = "×";
+            del.setAttribute("aria-label", "Termin «" + x.t + "» löschen");
+            del.addEventListener("click", () => {
+              writeStore(OWN_KEY, readStore(OWN_KEY, []).filter((o) => o.id !== x.id));
+              renderWeek();
+            });
+            ev.append(del);
+          } else ev.append(document.createElement("span"));
+          if (x.l) {
+            const lo = document.createElement("span");
+            lo.className = "lo";
+            lo.textContent = x.l;
+            ev.append(lo);
+          }
+          el.append(ev);
+        }
+        return el;
+      }));
+    }
+    const imp = readStore(IMPORT_KEY, null);
+    $("weekMeta").textContent = imp && imp.ts
+      ? "Kalender übernommen am " + new Date(imp.ts).toLocaleString("de-CH", { weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }) + " Uhr"
+      : "";
+  }
+
+  $("addForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const date = $("addDate").value, time = $("addTime").value, title = $("addTitle").value.trim();
+    if (!date || !title) return;
+    const [y, m, d] = date.split("-").map(Number);
+    const allDay = !time;
+    const [hh, mm] = allDay ? [0, 0] : time.split(":").map(Number);
+    const s = new Date(y, m - 1, d, hh, mm);
+    const end = allDay ? new Date(y, m - 1, d + 1) : new Date(s.getTime() + 60 * 60 * 1000);
+    const own = readStore(OWN_KEY, []);
+    own.push({ id: Date.now().toString(36), s: s.toISOString(), e: end.toISOString(), a: allDay, t: title, l: "" });
+    writeStore(OWN_KEY, own);
+    $("addTitle").value = "";
+    $("addTime").value = "";
+    renderWeek();
+  });
+  $("addDate").value = dkey(new Date());
+  importFromHash();
+  window.addEventListener("hashchange", () => { importFromHash(); renderWeek(); });
+  renderWeek();
 
   // ---------- Zugverbindungen ----------
   const mins = (dur) => { // "00d02:22:00" → 142

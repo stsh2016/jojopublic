@@ -9,6 +9,23 @@ Für jeden Ort ausser Stäfa zeigt die App die nächsten 2 Verbindungen von Stä
 (Fahrplan von [transport.opendata.ch](https://transport.opendata.ch/), mit Gleis und Verspätung; nach Uetikon und Zürich nur Züge).
 «Details heute» und «Die nächsten Tage» sind zugeklappt und öffnen sich per Tippen.
 
+## Wochenplan
+
+Vor den Zugverbindungen zeigt «Diese Woche» die Termine der nächsten 7 Tage, jeweils mit dem Wetter des Tages.
+Termine lassen sich von Hand eintragen oder aus dem iPhone-Kalender übernehmen. Eine Web-App darf den Kalender nicht
+selbst lesen, deshalb übernimmt das ein Kurzbefehl, der die App mit den Terminen öffnet:
+
+1. **Kalenderereignisse suchen** – Startdatum ist in den nächsten 7 Tagen, sortiert nach Startdatum (optional: nur bestimmte Kalender).
+2. **Wiederholen mit jedem** – darin **Text**: `Startdatum|Enddatum|Ist ganztägig|Titel|Ort`
+   (Variable «Wiederholungsobjekt» mit der jeweiligen Eigenschaft; Datumsformat «ISO 8601»).
+3. **Text kombinieren** (Wiederholungsergebnisse, Trennzeichen «Neue Zeile»), danach **URL codieren**.
+4. **Text**: `https://stsh2016.github.io/jojopublic/#termine=` gefolgt von der codierten Variable.
+5. **URLs öffnen**.
+
+Die Termine stehen nur im Teil der Adresse nach `#`, der nicht an den Server gesendet wird, und werden danach
+nur lokal im Browser des iPhones gespeichert. Jeder Aufruf des Kurzbefehls ersetzt die zuvor übernommenen Kalendertermine;
+von Hand eingetragene Termine bleiben erhalten.
+
 - Reine statische Website: HTML, CSS und JavaScript in einer Datei, kein Build-Schritt, keine Abhängigkeiten.
 - Wetterdaten von [Open-Meteo](https://open-meteo.com/) (kostenlos, kein API-Schlüssel, u. a. Modelle von MeteoSchweiz).
 - Als App installierbar über Safari → Teilen → «Zum Home-Bildschirm».
