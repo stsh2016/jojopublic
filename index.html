@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Wetter Stäfa</title>
-<meta name="description" content="Aktuelles Wetter in Stäfa am Zürichsee und was du heute anziehen solltest.">
+<meta name="description" content="Aktuelles Wetter in Stäfa, Uetikon am See, Zürich und Hohentengen und was du heute anziehen solltest.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Stäfa">
+<meta name="apple-mobile-web-app-title" content="Wetter">
 <meta name="theme-color" content="#eef3f6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0d1a22" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -65,13 +65,26 @@ button:focus-visible { outline: 2px solid var(--lake); outline-offset: 2px; }
 
 /* Kopf */
 .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.place { min-width: 0; }
 .place h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.01em; }
+/* Ortswahl: der Titel ist selbst das Menü; das native <select> liegt unsichtbar darüber und öffnet die iOS-Auswahl */
+.pick { position: relative; display: inline-flex; align-items: center; gap: 8px; max-width: 100%; cursor: pointer; border-radius: 10px; }
+.pick h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pick .chev { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--surface); border: 1px solid var(--line); display: grid; place-items: center; }
+.pick .chev::before { content: ""; width: 7px; height: 7px; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: translateY(-2px) rotate(45deg); }
+.pick select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 16px; }
+.pick:focus-within { outline: 2px solid var(--lake); outline-offset: 4px; }
 .place p { margin: 2px 0 0; color: var(--muted); font-size: 0.85rem; }
 .refresh {
-  border: 1px solid var(--line); background: var(--surface); border-radius: 999px;
-  padding: 7px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+  flex: none; width: 40px; height: 40px; padding: 0; display: grid; place-items: center;
+  border: 1px solid var(--line); background: var(--surface); border-radius: 50%; cursor: pointer;
 }
-.refresh[aria-busy="true"] { opacity: 0.6; }
+.refresh svg { width: 18px; height: 18px; fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.refresh[aria-busy="true"] svg { opacity: 0.5; }
+@media (prefers-reduced-motion: no-preference) {
+  .refresh[aria-busy="true"] svg { animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+}
 
 /* Jetzt */
 .now { display: grid; grid-template-columns: auto 1fr; align-items: end; gap: 4px 18px; }
@@ -140,10 +153,19 @@ footer a { color: inherit; }
 <main id="app" class="skeleton">
   <header class="top">
     <div class="place">
-      <h1>Stäfa</h1>
-      <p>Zürichsee · 414 m ü. M.</p>
+      <label class="pick" for="place">
+        <h1 id="placeName">Stäfa</h1>
+        <span class="chev" aria-hidden="true"></span>
+        <select id="place" aria-label="Ort wählen">
+          <option value="staefa">Stäfa</option>
+          <option value="uetikon">Uetikon am See</option>
+          <option value="zuerich">Zürich</option>
+          <option value="hohentengen">Hohentengen</option>
+        </select>
+      </label>
+      <p id="placeMeta">Zürichsee · 414 m ü. M.</p>
     </div>
-    <button class="refresh" id="refresh" type="button">Aktualisieren</button>
+    <button class="refresh" id="refresh" type="button" aria-label="Aktualisieren" title="Aktualisieren"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg></button>
   </header>
 
   <section class="now" aria-label="Aktuelles Wetter">
@@ -190,9 +212,24 @@ footer a { color: inherit; }
 
 <script>
 (() => {
-  const LAT = 47.2400, LON = 8.7230;
-  const CACHE_KEY = "wetter-staefa-v1";
-  const API = "https://api.open-meteo.com/v1/forecast?latitude=" + LAT + "&longitude=" + LON +
+  // water: wo es windiger ist (für den Windhinweis); fog: Tipp bei Nebel
+  const PLACES = {
+    staefa:      { name: "Stäfa",          lat: 47.2400, lon: 8.7230, meta: "Zürichsee · 414 m ü. M.", water: "am See",
+                   fog: "Nebel am See möglich – oben am Pfannenstiel ist es oft sonnig." },
+    uetikon:     { name: "Uetikon am See", lat: 47.2640, lon: 8.6790, meta: "Zürichsee · 414 m ü. M.", water: "am See",
+                   fog: "Nebel am See möglich – oben am Pfannenstiel ist es oft sonnig." },
+    zuerich:     { name: "Zürich",         lat: 47.3769, lon: 8.5417, meta: "Stadt · 408 m ü. M.", water: "am See und an der Limmat",
+                   fog: "Hochnebel möglich – auf dem Uetliberg ist es oft sonnig." },
+    hohentengen: { name: "Hohentengen",    lat: 47.5700, lon: 8.4340, meta: "am Hochrhein (DE) · 347 m ü. M.", water: "am Rhein",
+                   fog: "Nebel am Rhein möglich – er löst sich oft erst gegen Mittag auf." }
+  };
+  const PLACE_KEY = "wetter-ort";
+  const CACHE_PREFIX = "wetter-cache-";
+  let placeId = "staefa";
+  try { const saved = localStorage.getItem(PLACE_KEY); if (PLACES[saved]) placeId = saved; } catch (e) {}
+  const place = () => PLACES[placeId];
+
+  const apiUrl = (p) => "https://api.open-meteo.com/v1/forecast?latitude=" + p.lat + "&longitude=" + p.lon +
     "&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,is_day" +
     "&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,uv_index" +
     "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max,wind_gusts_10m_max" +
@@ -282,13 +319,13 @@ footer a { color: inherit; }
     if (s.snow) { tips.push({ t: "Schnee möglich: Schuhe mit gutem Profil, die nicht nass werden.", w: true }); if (!items.includes("Winterstiefel")) items.push("Wasserdichte Winterschuhe"); }
     if (s.freezing) tips.push({ t: "Gefrierender Regen möglich – Glättegefahr auf Trottoir und Strasse.", w: true });
     if (s.thunder) tips.push({ t: "Gewitter möglich: Regenjacke mitnehmen und nicht aufs Wasser gehen.", w: true });
-    if (windy) tips.push({ t: "Böen bis " + r(s.gustMax) + " km/h. Windfeste Jacke statt Schirm, am See ist es noch ruppiger.", w: true });
+    if (windy) tips.push({ t: "Böen bis " + r(s.gustMax) + " km/h. Windfeste Jacke statt Schirm, " + place().water + " ist es noch ruppiger.", w: true });
     else if (s.windMax >= 25) tips.push({ t: "Spürbarer Wind (" + r(s.windMax) + " km/h). Eine winddichte Schicht hilft." });
     if (s.bise && t < 15) tips.push({ t: "Bise aus Nordost – fühlt sich kälter an, als das Thermometer zeigt." });
     if (s.feelsMax - s.feelsMin >= 8) tips.push({ t: "Grosser Temperaturunterschied (" + r(s.feelsMin) + "° bis " + r(s.feelsMax) + "° gefühlt). Zwiebelprinzip: Schichten, die du ausziehen kannst." });
     if (s.uvMax >= 6) { items.push("Sonnenbrille", "Sonnencreme"); tips.push({ t: "Hoher UV-Index (" + r(s.uvMax) + "). Sonnencreme mit LSF 30+." , w: true }); }
     else if (s.uvMax >= 3 && !rainy) { items.push("Sonnenbrille"); }
-    if (s.fog) tips.push({ t: "Nebel am See möglich – oben am Pfannenstiel ist es oft sonnig." });
+    if (s.fog) tips.push({ t: place().fog });
 
     return { title, items: [...new Set(items)], tips };
   }
@@ -403,32 +440,58 @@ footer a { color: inherit; }
     return dt.toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit" });
   }
 
+  let requestNo = 0;
   async function load() {
+    const id = placeId, my = ++requestNo;
     const btn = $("refresh");
     btn.setAttribute("aria-busy", "true");
-    btn.textContent = "Lädt …";
     try {
-      const res = await fetch(API, { cache: "no-store" });
+      const res = await fetch(apiUrl(PLACES[id]), { cache: "no-store" });
       if (!res.ok) throw new Error("HTTP " + res.status);
-      data = await res.json();
+      const fresh = await res.json();
       const ts = Date.now();
-      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts, data })); } catch (e) {}
+      try { localStorage.setItem(CACHE_PREFIX + id, JSON.stringify({ ts, data: fresh })); } catch (e) {}
+      if (my !== requestNo) return; // inzwischen anderer Ort gewählt
+      data = fresh;
       render();
       setStatus("Stand " + stamp(ts) + " Uhr");
     } catch (e) {
+      if (my !== requestNo) return;
       if (data) setStatus("Keine Verbindung. Angezeigt werden die zuletzt geladenen Daten.", true);
-      else setStatus("Wetter konnte nicht geladen werden. Prüfe die Internetverbindung und tippe auf «Aktualisieren».", true);
+      else setStatus("Wetter konnte nicht geladen werden. Prüfe die Internetverbindung und tippe oben rechts auf das Pfeilsymbol.", true);
     } finally {
-      btn.removeAttribute("aria-busy");
-      btn.textContent = "Aktualisieren";
+      if (my === requestNo) btn.removeAttribute("aria-busy");
     }
   }
 
-  // Zuletzt geladene Daten sofort zeigen, dann frisch laden
-  try {
-    const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
-    if (cached && cached.data) { data = cached.data; render(); setStatus("Stand " + stamp(cached.ts) + " Uhr · wird aktualisiert …"); }
-  } catch (e) {}
+  // Ort anzeigen; zuletzt geladene Daten dieses Orts sofort zeigen, dann frisch laden
+  function showPlace() {
+    const p = place();
+    $("place").value = placeId;
+    $("placeName").textContent = p.name;
+    $("placeMeta").textContent = p.meta;
+    document.title = "Wetter " + p.name;
+    data = null;
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_PREFIX + placeId) || "null");
+      if (cached && cached.data) { data = cached.data; setStatus("Stand " + stamp(cached.ts) + " Uhr · wird aktualisiert …"); }
+    } catch (e) {}
+    if (data) render();
+    else {
+      document.getElementById("app").classList.add("skeleton");
+      $("nowTemp").textContent = "–°";
+      $("nowCond").textContent = "Wetter wird geladen …";
+      setStatus("");
+    }
+  }
+  $("place").addEventListener("change", (e) => {
+    if (!PLACES[e.target.value]) return;
+    placeId = e.target.value;
+    try { localStorage.setItem(PLACE_KEY, placeId); } catch (err) {}
+    showPlace();
+    load();
+  });
+  showPlace();
 
   function setView(v) {
     view = v;

@@ -1,7 +1,7 @@
 {
-  "name": "Wetter Stäfa",
-  "short_name": "Stäfa",
-  "description": "Wetter in Stäfa und was du anziehen solltest.",
+  "name": "Wetter am See",
+  "short_name": "Wetter",
+  "description": "Wetter in Stäfa, Uetikon am See, Zürich und Hohentengen und was du anziehen solltest.",
   "lang": "de-CH",
   "start_url": "./",
   "scope": "./",

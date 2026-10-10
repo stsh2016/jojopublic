@@ -1,6 +1,9 @@
 # Wetter Stäfa
 
-Web-App fürs iPhone: aktuelles Wetter in Stäfa am Zürichsee und eine Empfehlung, was man anziehen soll (heute und morgen).
+Web-App fürs iPhone: aktuelles Wetter und eine Empfehlung, was man anziehen soll (heute und morgen).
+
+Orte zur Auswahl (Tippen auf den Ortsnamen oben öffnet das Menü, die Wahl wird gespeichert):
+Stäfa, Uetikon am See, Zürich und Hohentengen am Hochrhein.
 
 - Reine statische Website: HTML, CSS und JavaScript in einer Datei, kein Build-Schritt, keine Abhängigkeiten.
 - Wetterdaten von [Open-Meteo](https://open-meteo.com/) (kostenlos, kein API-Schlüssel, u. a. Modelle von MeteoSchweiz).
@@ -49,5 +52,5 @@ Dann `http://localhost:8790` im Browser öffnen.
 
 ## Anpassen
 
-- **Ort ändern:** `LAT` und `LON` oben im Skript in `index.html` anpassen, dazu Titel und Höhenangabe im Kopf.
+- **Orte ändern oder ergänzen:** Liste `PLACES` oben im Skript in `index.html` (Name, Koordinaten, Höhenangabe, Wind- und Nebelhinweis) und dazu passend eine `<option>` im Auswahlmenü `#place`.
 - **Kleidungsregeln:** Funktion `recommend()` in `index.html`. Die Grenzen richten sich nach der kältesten gefühlten Temperatur im gewählten Zeitraum.
